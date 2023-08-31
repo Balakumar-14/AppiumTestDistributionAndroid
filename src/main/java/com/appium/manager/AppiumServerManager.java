@@ -19,21 +19,28 @@ public class AppiumServerManager {
 
     private static AppiumDriverLocalService appiumDriverLocalService;
 
+    // This private static method returns the appiumDriverLocalService instance.
+    // It is used to access the Appium driver local service within the class.
     private static AppiumDriverLocalService getAppiumDriverLocalService() {
         return appiumDriverLocalService;
     }
 
     private static final Logger LOGGER = Logger.getLogger(AppiumServerManager.class.getName());
 
+    // This private static method sets the appiumDriverLocalService to the provided value.
+    // It is used to update the Appium driver local service instance.
     private static void setAppiumDriverLocalService(
             AppiumDriverLocalService appiumDriverLocalService) {
         AppiumServerManager.appiumDriverLocalService = appiumDriverLocalService;
     }
 
+    // This private method returns the URL of the Appium server.
+    // It internally calls getAppiumDriverLocalService().getUrl() to obtain the server URL.
     private URL getAppiumUrl() {
         return getAppiumDriverLocalService().getUrl();
     }
 
+    // This method is responsible for shutting down the Appium server.
     public void destroyAppiumNode() {
         LOGGER.info("Shutting down Appium Server");
         getAppiumDriverLocalService().stop();
@@ -41,14 +48,21 @@ public class AppiumServerManager {
             LOGGER.info("AppiumServer didn't shut... Trying to quit again....");
             getAppiumDriverLocalService().stop();
         }
+        if (getAppiumDriverLocalService().isRunning()) {
+            LOGGER.info("AppiumServer is not shutting down");
+        }
     }
 
+    // This method returns the URL of the Appium server as a string.
+    // It calls getAppiumUrl().toString() to get the server URL.
     public String getRemoteWDHubIP() {
         return getAppiumUrl().toString();
     }
 
+    // This method starts the Appium server on the specified host.
+    // It configures AppiumServiceBuilder with logfile location, IP address, timeout.
     public void startAppiumServer(String host) throws Exception {
-        LOGGER.info(LOGGER.getName() + "Starting Appium Server on Localhost");
+        LOGGER.info(LOGGER.getName() + " Starting Appium Server on Localhost");
         AppiumDriverLocalService appiumDriverLocalService;
         AppiumServiceBuilder builder =
                 getAppiumServerBuilder(host)
@@ -70,7 +84,7 @@ public class AppiumServerManager {
         setAppiumDriverLocalService(appiumDriverLocalService);
     }
 
-    /*private void getWindowsDevice(String platform, List<Device> devices) {
+    /* private void getWindowsDevice(String platform, List<Device> devices) {
         if (platform.equalsIgnoreCase(OSType.WINDOWS.name())
                 && Capabilities.getInstance().isWindowsApp()) {
             Device device = new Device();
@@ -83,8 +97,11 @@ public class AppiumServerManager {
             deviceList.add(device);
             devices.addAll(deviceList);
         }
-    }*/
+    } */
 
+    // This method finds and returns an available port on the specified host machine.
+    // It creates a ServerSocket with a port value of 0, which will bind to any available port.
+    // It then returns the port number selected by the operating system and closes the socket.
     public int getAvailablePort(String hostMachine) throws IOException {
         ServerSocket socket = new ServerSocket(0);
         socket.setReuseAddress(true);
@@ -93,12 +110,15 @@ public class AppiumServerManager {
         return port;
     }
 
+    // This private method returns an AppiumServiceBuilder instance.
+    // If the path is provided, it returns the builder with the specified path;
+    // otherwise, it returns the default builder.
     private AppiumServiceBuilder getAppiumServerBuilder(String host) throws Exception {
         if (Capabilities.getInstance().getCapabilities().has("appiumServerPath")) {
             Path path = FileSystems.getDefault().getPath(Capabilities.getInstance()
                     .getCapabilities().get("appiumServerPath").toString());
             String serverPath = path.normalize().toAbsolutePath().toString();
-            LOGGER.info("Picking UserSpecified Path for AppiumServiceBuilder");
+            LOGGER.info("Picking UserSpecified Path for AppiumServiceBuilder - " + serverPath);
             return getAppiumServiceBuilderWithUserAppiumPath(serverPath);
         } else {
             LOGGER.info("Picking Default Path for AppiumServiceBuilder");
@@ -107,12 +127,13 @@ public class AppiumServerManager {
         }
     }
 
-    private AppiumServiceBuilder
-            getAppiumServiceBuilderWithUserAppiumPath(String appiumServerPath) {
+    // This private method returns an AppiumServiceBuilder with the provided appiumServerPath.
+    private AppiumServiceBuilder getAppiumServiceBuilderWithUserAppiumPath(String appiumServerPath) {
         return new AppiumServiceBuilder().withAppiumJS(
                 new File(appiumServerPath));
     }
 
+    // This private method returns an AppiumServiceBuilder with the default path.
     private AppiumServiceBuilder getAppiumServiceBuilderWithDefaultPath() {
         return new AppiumServiceBuilder();
     }

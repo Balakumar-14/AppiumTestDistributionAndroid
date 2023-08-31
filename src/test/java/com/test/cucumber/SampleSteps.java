@@ -2,8 +2,6 @@ package com.test.cucumber;
 
 import com.test.site.UserBaseTest;
 import io.appium.java_client.MobileBy;
-import io.cucumber.core.runtime.CucumberExecutionContext;
-import io.cucumber.java.en.And;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
@@ -11,8 +9,6 @@ import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
 import java.time.Duration;
-
-import static com.appium.manager.AppiumDriverManager.getDriver;
 
 public class SampleSteps extends UserBaseTest {
 
@@ -47,7 +43,7 @@ public class SampleSteps extends UserBaseTest {
 
     @When("I drag & drop")
     public void iDragDrop() {
-        waitForElement("dragAndDrop").click();
+        waitForElementByString("dragAndDrop").click();
     }
 
     @Then("drag and drop should have worked")

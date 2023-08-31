@@ -13,6 +13,7 @@ import static java.util.Collections.addAll;
 import static org.apache.commons.lang3.StringUtils.isNotEmpty;
 
 import com.appium.device.Device;
+import com.appium.device.Devices;
 import com.appium.utils.ConfigFileManager;
 import org.reflections.Reflections;
 import org.reflections.scanners.MethodAnnotationsScanner;
@@ -62,7 +63,7 @@ public class ATDExecutor {
 
         if (executionType.equalsIgnoreCase("distribute")) {
             if (runnerLevel != null && runnerLevel.equalsIgnoreCase("class")) {
-                constructXmlSuiteForClassLevelDistributionRunner(test, getTestMethods(setOfMethods),
+                constructXmlSuiteForClassLevelForSingleDevicesDistributionRunner(test, getTestMethods(setOfMethods),
                         suiteName, categoryName, deviceCount);
             } else {
                 constructXmlSuiteForMethodLevelDistributionRunner(test,
@@ -133,6 +134,61 @@ public class ATDExecutor {
         return suite;
     }
 
+    public XmlSuite constructXmlSuiteForClassLevelForSingleDevicesDistributionRunner(List<String> tests,
+                                                                     Map<String, List<Method>> methods,
+                                                                     String suiteName, String categoryName, int deviceCount) {
+
+        int devicesCount = deviceList.size();
+        XmlSuite suite = new XmlSuite();
+        suite.setName(suiteName);
+        suite.setThreadCount(deviceCount);
+//        suite.setThreadCount(1);
+        suite.setParallel(ParallelMode.TESTS);
+        suite.setVerbose(2);
+        listeners.add("com.appium.manager.AppiumParallelMethodTestListener");
+        include(listeners, LISTENERS);
+        suite.setListeners(listeners);
+
+        int deviceIterator = 0;
+
+        for(String testCase : tests)
+        {
+            if(!deviceList.get(deviceIterator).busy){
+                xmlTestsCreator(suite, testCase, methods, deviceList.get(deviceIterator).udid);
+                if(deviceIterator == (devicesCount-1))
+                {
+                    deviceIterator = 0;
+                }
+                else {
+                    deviceIterator++;
+                }
+            }
+        }
+
+//        XmlClass xmlClass = writeSingleXMLClass(tests.get(1), methods);
+        writeTestNGFile(suite);
+        return suite;
+    }
+
+    public XmlTest xmlTestsCreator(XmlSuite suite,String testCase,
+                                   Map<String, List<Method>> methods , String deviceName){
+
+        XmlTest test = new XmlTest(suite);
+        for(String className : methods.keySet()) {
+            List<XmlClass> xmlClasses = new ArrayList<>();
+            if (className.contains("Test") && className.contains(testCase)) {
+                XmlClass xmlClass = new XmlClass();
+                xmlClass.setName(className);
+                xmlClasses.add(xmlClass);
+                test.setName(className);
+                test.addParameter("device", deviceName);
+                test.setThreadCount(1);
+                test.setXmlClasses(xmlClasses);
+                test.setParallel(ParallelMode.NONE);
+            }
+        }
+        return test;
+    }
 
     public XmlSuite constructXmlSuiteForMethodLevelDistributionRunner(List<String> tests,
                              Map<String, List<Method>> methods, String suiteName,

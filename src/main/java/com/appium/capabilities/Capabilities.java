@@ -269,7 +269,7 @@ public class Capabilities {
 
     public void validateCapabilitySchema(JSONObject loadedCapabilities) {
         try {
-            isPlatformInEnv();
+            //            isPlatformInEnv();
             LOGGER.debug("Validating capabilities schema: " + loadedCapabilities);
             InputStream inputStream = getClass().getResourceAsStream(getPlatform());
             JSONObject rawSchema = new JSONObject(new JSONTokener(inputStream));
@@ -290,7 +290,8 @@ public class Capabilities {
     }
 
     private String getPlatform() {
-        String platform = atdEnvironment.get("Platform");
+        //        String platform = atdEnvironment.get("Platform");
+        String platform = "android";
         String schema = null;
         switch (platform.toLowerCase()) {
             case "android":
@@ -311,6 +312,8 @@ public class Capabilities {
     }
 
     private void isPlatformInEnv() {
+        //        atdEnvironment.set("Platform","android");
+        //        String s = atdEnvironment.get("Platform");
         if (atdEnvironment.get("Platform") == null) {
             throw new IllegalArgumentException("Please execute with Platform environment"
                     + ":: Platform=android/ios/both/windows mvn clean -Dtest=Runner test");

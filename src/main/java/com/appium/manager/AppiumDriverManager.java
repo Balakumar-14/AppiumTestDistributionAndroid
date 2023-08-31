@@ -16,6 +16,7 @@ import org.openqa.selenium.remote.DesiredCapabilities;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.MalformedURLException;
 import java.net.URL;
 
 import static com.appium.manager.AppiumDeviceManager.getMobilePlatform;
@@ -53,8 +54,12 @@ public class AppiumDriverManager {
         MobilePlatform mobilePlatform = getMobilePlatform();
         switch (mobilePlatform) {
             case IOS:
-                currentDriverSession = new IOSDriver(new URL(remoteWDHubIP),
-                        desiredCapabilities);
+                try {
+                    currentDriverSession = new IOSDriver(new URL(remoteWDHubIP),
+                            desiredCapabilities);
+                } catch (MalformedURLException e) {
+                    throw new RuntimeException(e);
+                }
                 break;
             case ANDROID:
                 currentDriverSession = new AndroidDriver(new URL(remoteWDHubIP),
@@ -107,8 +112,15 @@ public class AppiumDriverManager {
         LOGGER.info("startAppiumDriverInstance");
         DesiredCapabilities desiredCapabilities = buildDesiredCapabilities(CAPS.get());
         desiredCapabilities.setCapability("appium:udids", deviceUDID);
-        AppiumDriver currentDriverSession =
-                initialiseDriver(desiredCapabilities);
+
+        AppiumDriver currentDriverSession;
+        if(testMethodName.equalsIgnoreCase("demoTwoTestOne")) {
+            currentDriverSession =
+                    initialiseDriver(desiredCapabilities);
+        }else {
+            currentDriverSession =
+                    initialiseDriver(desiredCapabilities);
+        }
         AppiumDriverManager.setDriver(currentDriverSession);
     }
 

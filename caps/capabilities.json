@@ -1,16 +1,15 @@
 {
   "android": {
-    "platformName": "android",
+    "appActivity": "com.zoho.accounts.oneauth.v2.ui.login.WalkthroughActivity",
+    "appPackage": "com.zoho.accounts.oneauth",
     "automationName": "UiAutomator2",
-    "uiautomator2ServerInstallTimeout": 120000,
-    "adbExecTimeout": 140000,
-    "app": "./apps/VodQA.apk",
-    "deviceName": "android",
-    "noSign": true
+    "noReset": false,
+    "platformName": "android",
+    "uiautomator2ServerInstallTimeout": 120000
   },
   "serverConfig" : {
     "server": {
-      "use-plugins": ["device-farm", "element-wait"],
+      "use-plugins": ["device-farm", "element-wait", "appium-dashboard"],
       "plugin": {
         "device-farm": {
           "platform": "android",

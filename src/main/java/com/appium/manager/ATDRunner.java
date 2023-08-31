@@ -5,6 +5,7 @@ import com.appium.device.Device;
 import com.appium.device.Devices;
 import com.appium.executor.ATDExecutor;
 import com.appium.filelocations.FileLocations;
+import com.appium.utils.OverriddenVariable;
 import org.apache.log4j.Logger;
 import org.json.JSONObject;
 
@@ -36,9 +37,18 @@ public class ATDRunner {
         capabilities = Capabilities.getInstance();
         writeServiceConfig();
         AppiumServerManager appiumServerManager = new AppiumServerManager();
-        appiumServerManager.startAppiumServer("127.0.0.1"); //Needs to be removed
+        appiumServerManager.startAppiumServer("127.0.0.1");
+
         List<Device> devices = Devices.getConnectedDevices();
-        ATDExecutor = new ATDExecutor(devices);
+        List<Device> availableDevices = new ArrayList<>(); // Initialize the list
+
+        for (Device device : devices) {
+            if (!device.busy) {
+                availableDevices.add(device);
+            }
+        }
+
+        ATDExecutor = new ATDExecutor(availableDevices); // Use availableDevices here
         createOutputDirectoryIfNotExist();
     }
 
@@ -130,9 +140,9 @@ public class ATDRunner {
     private void createSnapshotDirectoryFor() {
         List<Device> udids = Devices.getConnectedDevices();
         for (Device udid : udids) {
-            String os = udid.getPlatform().equalsIgnoreCase(IOS) ? "iOS" : "Android";
+            String os = udid.platform.equalsIgnoreCase(IOS) ? "iOS" : "Android";
             createPlatformDirectory(os);
-            String deviceId = udid.getUdid();
+            String deviceId = udid.udid;
             File file = new File(
                     System.getProperty(USER_DIR)
                             + FileLocations.SCREENSHOTS_DIRECTORY
