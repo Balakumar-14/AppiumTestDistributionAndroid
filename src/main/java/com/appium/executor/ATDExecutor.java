@@ -1,19 +1,6 @@
 package com.appium.executor;
 
-import static com.appium.filelocations.FileLocations.PARALLEL_XML_LOCATION;
-import static com.appium.utils.ConfigFileManager.CATEGORY;
-import static com.appium.utils.ConfigFileManager.EXCLUDE_GROUPS;
-import static com.appium.utils.ConfigFileManager.INCLUDE_GROUPS;
-import static com.appium.utils.ConfigFileManager.LISTENERS;
-import static com.appium.utils.ConfigFileManager.RUNNER_LEVEL;
-import static com.appium.utils.ConfigFileManager.SUITE_NAME;
-import static com.appium.utils.FigletHelper.figlet;
-import static java.lang.System.getProperty;
-import static java.util.Collections.addAll;
-import static org.apache.commons.lang3.StringUtils.isNotEmpty;
-
 import com.appium.device.Device;
-import com.appium.device.Devices;
 import com.appium.utils.ConfigFileManager;
 import org.reflections.Reflections;
 import org.reflections.scanners.MethodAnnotationsScanner;
@@ -26,20 +13,37 @@ import org.testng.xml.XmlClass;
 import org.testng.xml.XmlSuite;
 import org.testng.xml.XmlSuite.ParallelMode;
 import org.testng.xml.XmlTest;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.NodeList;
+import org.xml.sax.SAXException;
 
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerConfigurationException;
+import javax.xml.transform.TransformerException;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
+import java.util.*;
+
+import static com.appium.filelocations.FileLocations.PARALLEL_XML_LOCATION;
+import static com.appium.utils.ConfigFileManager.*;
+import static com.appium.utils.FigletHelper.figlet;
+import static java.lang.System.getProperty;
+import static java.util.Collections.addAll;
+import static org.apache.commons.lang3.StringUtils.isNotEmpty;
 
 public class ATDExecutor {
     private final List<Device> deviceList;
@@ -63,7 +67,7 @@ public class ATDExecutor {
 
         if (executionType.equalsIgnoreCase("distribute")) {
             if (runnerLevel != null && runnerLevel.equalsIgnoreCase("class")) {
-                constructXmlSuiteForClassLevelForSingleDevicesDistributionRunner(test, getTestMethods(setOfMethods),
+                constructXmlSuiteForMultipleClassDistribution(test, getTestMethods(setOfMethods),
                         suiteName, categoryName, deviceCount);
             } else {
                 constructXmlSuiteForMethodLevelDistributionRunner(test,
@@ -73,9 +77,52 @@ public class ATDExecutor {
             constructXmlSuiteForParallelRunner(test, getTestMethods(setOfMethods),
                     suiteName, categoryName, deviceCount);
         }
+
+        parallelXMLFileEdit();
+
         result = testNGParallelRunner();
         figlet("Test Completed");
         return result;
+    }
+
+    public void parallelXMLFileEdit(){
+        try {
+            // Define the path to the XML file
+            String xmlFilePath = System.getProperty("user.dir") + PARALLEL_XML_LOCATION;
+
+            // Read the content of the XML file
+            String xmlContent = readXmlFile(xmlFilePath);
+
+            // Replace "parallel="methods"" with "parallel="false""
+            xmlContent = xmlContent.replaceAll("parallel=\"methods\"", "parallel=\"false\"");
+
+            xmlContent = xmlContent.replaceAll("thread-count=\"1\"", "");
+
+            // Save the modified content back to the same file
+            saveXmlFile(xmlContent, xmlFilePath);
+
+            System.out.println("XML file updated successfully.");
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private static String readXmlFile(String filePath) throws IOException {
+        // Read the content of the XML file
+        return Files.readString(Path.of(filePath));
+    }
+
+    private static void saveXmlFile(String content, String filePath) throws IOException {
+        // Backup the original file
+        File originalFile = new File(filePath);
+        File backupFile = new File(filePath + ".bak");
+        Files.copy(originalFile.toPath(), backupFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+
+        // Write the modified content back to the original file
+        try (FileWriter writer = new FileWriter(originalFile)) {
+            writer.write(content);
+        }
     }
 
     public XmlSuite constructXmlSuiteForParallelRunner(List<String> tests,
@@ -134,6 +181,103 @@ public class ATDExecutor {
         return suite;
     }
 
+
+    public XmlSuite constructXmlSuiteForMultipleClassDistribution(List<String> tests,
+                                                                                     Map<String, List<Method>> methods,
+                                                                                     String suiteName, String categoryName, int deviceCount) {
+        int devicesCount = deviceList.size();
+        XmlSuite suite = new XmlSuite();
+        suite.setName(suiteName);
+        suite.setThreadCount(deviceCount);
+        suite.setParallel(ParallelMode.TESTS);
+        suite.setVerbose(2);
+        suite.setPreserveOrder(true);
+        listeners.add("com.appium.manager.AppiumParallelMethodTestListener");
+        include(listeners, LISTENERS);
+        suite.setListeners(listeners);
+        System.out.println("Is Preserve Order Enabled: " + suite.getPreserveOrder());
+
+        int deviceIterator = 0;
+
+        int iterator = 0;
+
+        List<List<String>> segregatedTestCases = distributeTestCases(tests, devicesCount);
+
+        // Display the segregated test cases for each device
+        for (int i = 0; i < devicesCount; i++) {
+            System.out.println("Device " + (i + 1) + " Test Cases: " + segregatedTestCases.get(i));
+        }
+
+        if(segregatedTestCases.size() == deviceCount) {
+            for(List<String> testClasses : segregatedTestCases)
+            {
+                if(!deviceList.get(deviceIterator).busy){
+                    xmlTestsCreatorWithMultipleClasses(suite, testClasses, methods, deviceList.get(deviceIterator).udid);
+                    if(deviceIterator == (devicesCount-1))
+                    {
+                        deviceIterator = 0;
+                    }
+                    else {
+                        deviceIterator++;
+                    }
+                }
+            }
+        }
+
+//        XmlClass xmlClass = writeSingleXMLClass(tests.get(1), methods);
+        writeTestNGFile(suite);
+        return suite;
+    }
+
+    public XmlTest xmlTestsCreatorWithMultipleClasses(XmlSuite suite,List<String> testClasses,
+                                   Map<String, List<Method>> methods , String deviceName){
+
+        XmlTest test = new XmlTest(suite);
+
+        List<XmlClass> xmlClasses = new ArrayList<>();
+        for(String className : methods.keySet()) {
+
+            for(String testClass : testClasses) {
+                if (className.contains("Test") && className.contains(testClass)) {
+                    XmlClass xmlClass = new XmlClass();
+                    xmlClass.setName(className);
+                    xmlClasses.add(xmlClass);
+                    test.setName(deviceName + " Device tests");
+                    test.addParameter("device", deviceName);
+                    test.setThreadCount(1);
+                    test.setXmlClasses(xmlClasses);
+                    test.setParallel(ParallelMode.METHODS);
+//                test.setPreserveOrder(true);
+//                test.addParameter("parallel", "false");
+                    test.setVerbose(2);
+                }
+            }
+        }
+        return test;
+    }
+
+    private static List<List<String>> distributeTestCases(List<String> tests, int devicesCount) {
+        List<List<String>> segregatedTestCases = new ArrayList<>();
+
+        // Initialize empty lists for each device
+        for (int i = 0; i < devicesCount; i++) {
+            segregatedTestCases.add(new ArrayList<>());
+        }
+
+        // Distribute test cases evenly among devices if the test case list is not empty
+        if (!tests.isEmpty()) {
+            int currentDeviceIndex = 0;
+            for (String testCase : tests) {
+                List<String> deviceTestCases = segregatedTestCases.get(currentDeviceIndex);
+                deviceTestCases.add(testCase);
+                currentDeviceIndex = (currentDeviceIndex + 1) % devicesCount; // Rotate devices
+            }
+        }
+
+
+        return segregatedTestCases;
+    }
+
     public XmlSuite constructXmlSuiteForClassLevelForSingleDevicesDistributionRunner(List<String> tests,
                                                                      Map<String, List<Method>> methods,
                                                                      String suiteName, String categoryName, int deviceCount) {
@@ -145,9 +289,11 @@ public class ATDExecutor {
 //        suite.setThreadCount(1);
         suite.setParallel(ParallelMode.TESTS);
         suite.setVerbose(2);
+        suite.setPreserveOrder(true);
         listeners.add("com.appium.manager.AppiumParallelMethodTestListener");
         include(listeners, LISTENERS);
         suite.setListeners(listeners);
+        System.out.println("Is Preserve Order Enabled: " + suite.getPreserveOrder());
 
         int deviceIterator = 0;
 
@@ -184,7 +330,10 @@ public class ATDExecutor {
                 test.addParameter("device", deviceName);
                 test.setThreadCount(1);
                 test.setXmlClasses(xmlClasses);
-                test.setParallel(ParallelMode.NONE);
+                test.setParallel(ParallelMode.METHODS);
+//                test.setPreserveOrder(true);
+//                test.addParameter("parallel", "false");
+                test.setVerbose(2);
             }
         }
         return test;

@@ -18,5 +18,5 @@
       }
     }
   },
-  "appiumServerPath": "./node_modules/appium/build/lib/main.js"
+  "appiumServerPath": "/opt/homebrew/lib/node_modules/appium/build/lib/main.js"
 }

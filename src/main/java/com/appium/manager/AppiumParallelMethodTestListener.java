@@ -101,6 +101,8 @@ public final class AppiumParallelMethodTestListener extends Helpers
         String testName = context.getCurrentXmlTest().getName();
         String deviceName = context.getCurrentXmlTest().getParameter("device");
 
+        LOGGER.info("TestName : "+ testMethodName + ", DeviceName : " + deviceName);
+
         allocateDeviceAndStartDriver(testMethodName, iTestResult, deviceName);
 
         if (AppiumDeviceManager.getAppiumDevice() != null) {

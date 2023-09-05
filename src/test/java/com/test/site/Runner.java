@@ -18,11 +18,11 @@ public class Runner {
         List<String> tests = new ArrayList<>();
         tests.add("DemoOneTest");
         tests.add("GuestTests");
-//        tests.add("GuestFirstDuplicateTest");
+        tests.add("GuestFirstDuplicateTest");
         tests.add("DemoTwoTest");
-//        tests.add("DemoThreeTest");
-//        tests.add("GuestSecondDuplicateTest");
-//        tests.add("DemoFourTest");
+        tests.add("DemoThreeTest");
+        tests.add("GuestSecondDuplicateTest");
+        tests.add("DemoFourTest");
         //        try {
         //            Path apps = FileSystems.getDefault().getPath("apps").toAbsolutePath();
         //            ZipFile zipFile = new ZipFile(apps.toFile() + "/WebDriverAgent-Test.zip");

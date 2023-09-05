@@ -111,7 +111,7 @@ public class AppiumDriverManager {
                 testMethodName, CAPS.get()));
         LOGGER.info("startAppiumDriverInstance");
         DesiredCapabilities desiredCapabilities = buildDesiredCapabilities(CAPS.get());
-        desiredCapabilities.setCapability("appium:udids", deviceUDID);
+        desiredCapabilities.setCapability("appium:udid", deviceUDID);
 
         AppiumDriver currentDriverSession;
         if(testMethodName.equalsIgnoreCase("demoTwoTestOne")) {

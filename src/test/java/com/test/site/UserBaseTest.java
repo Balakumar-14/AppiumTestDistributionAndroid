@@ -85,4 +85,11 @@ public class UserBaseTest {
         return mobileDriver.findElement(By.id(id));
     }
 
+    public void sleep() {
+        try {
+            Thread.sleep(1000);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+    }
 }

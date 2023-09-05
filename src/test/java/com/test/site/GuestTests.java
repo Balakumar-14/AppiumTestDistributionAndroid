@@ -8,6 +8,7 @@ import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.PageFactory;
 import org.testng.annotations.Test;
 
+@Test(groups = { "GuestTests" })
 public class GuestTests extends UserBaseTest{
 
     private AppiumDriver mobileDriver;
@@ -28,7 +29,7 @@ public class GuestTests extends UserBaseTest{
         PageFactory.initElements(new AppiumFieldDecorator(mobileDriver), guestLoginPAGEObj);
     }
 
-    @Test(priority = 2, dependsOnMethods = "setPageObjects")
+    @Test(priority = 2/*, dependsOnMethods = "setPageObjects"*/)
     public void Guest_Login_and_Set_TPA()
     {
         mobileDriver = getDriver();
