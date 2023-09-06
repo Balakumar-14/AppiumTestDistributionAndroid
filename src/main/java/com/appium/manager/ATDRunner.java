@@ -12,8 +12,7 @@ import org.json.JSONObject;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 import static com.appium.filelocations.FileLocations.SERVER_CONFIG;
 import static com.appium.utils.ConfigFileManager.FRAMEWORK;
@@ -31,6 +30,7 @@ public class ATDRunner {
     private final ATDExecutor ATDExecutor;
     private final Capabilities capabilities;
     private static final Logger LOGGER = Logger.getLogger(ATDRunner.class.getName());
+    public  List<Device> availableDevices = new ArrayList<>(); // Initialize the list
 
 
     public ATDRunner() throws Exception {
@@ -40,14 +40,12 @@ public class ATDRunner {
         appiumServerManager.startAppiumServer("127.0.0.1");
 
         List<Device> devices = Devices.getConnectedDevices();
-        List<Device> availableDevices = new ArrayList<>(); // Initialize the list
 
         for (Device device : devices) {
             if (!device.busy) {
                 availableDevices.add(device);
             }
         }
-
         ATDExecutor = new ATDExecutor(availableDevices); // Use availableDevices here
         createOutputDirectoryIfNotExist();
     }
@@ -72,6 +70,11 @@ public class ATDRunner {
     }
 
     public boolean runner(String pack, List<String> tests) throws Exception {
+        figlet(RUNNER.get());
+        return parallelExecution(pack, tests);
+    }
+
+    public boolean runner(String pack, HashMap<String, List<String>> tests) throws Exception {
         figlet(RUNNER.get());
         return parallelExecution(pack, tests);
     }
@@ -110,6 +113,57 @@ public class ATDRunner {
             String executionType = runner.equalsIgnoreCase("distribute")
                     ? "distribute" : "parallel";
             result = ATDExecutor.constructXMLAndTriggerParallelRunner(tests, pack, deviceCount,
+                    executionType);
+        }
+        return result;
+    }
+
+    private boolean parallelExecution(String pack, HashMap<String,List<String>> devicesAndTheirTests) throws Exception {
+
+        int deviceCount = availableDevices.size();
+
+        if (deviceCount == 0) {
+            figlet("No Devices Connected");
+            System.exit(0);
+        }
+
+        LOGGER.info(LOGGER.getName()
+                + "Total Number of devices detected::" + deviceCount + "\n");
+
+        // Create a set to store the names of available devices
+        Set<String> availableDeviceNames = new HashSet<>();
+        for (Device device : availableDevices) {
+            availableDeviceNames.add(device.getUdid());
+        }
+
+        // Identify devices from devicesAndTheirTests that are present in availableDevices
+        for (String deviceName : devicesAndTheirTests.keySet()) {
+            if (availableDeviceNames.contains(deviceName)) {
+                System.out.println(deviceName + " is present in availableDevices list.");
+            } else {
+                System.out.println(deviceName + " is not present in availableDevices list.");
+            }
+        }
+
+        createAppiumLogsFolder();
+        createSnapshotDirectoryFor();
+        String platform = getOverriddenStringValue("Platform");
+        if (platform.equalsIgnoreCase("android")) {
+            if (!capabilities.getCapabilityObjectFromKey("android").has("automationName")) {
+                throw new IllegalArgumentException("Please set automationName "
+                        + "as UIAutomator2 or Espresso to create Android driver");
+            }
+            generateDirectoryForAdbLogs();
+        }
+
+        boolean result = false;
+        String runner = RUNNER.get();
+        String framework = FRAMEWORK.get();
+
+        if (framework.equalsIgnoreCase("testng")) {
+            String executionType = runner.equalsIgnoreCase("distribute")
+                    ? "distribute" : "parallel";
+            result = ATDExecutor.constructXMLAndTriggerParallelRunner(devicesAndTheirTests, pack, deviceCount,
                     executionType);
         }
         return result;

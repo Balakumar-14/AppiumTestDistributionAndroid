@@ -2,6 +2,7 @@ package com.appium.executor;
 
 import com.appium.device.Device;
 import com.appium.utils.ConfigFileManager;
+import org.apache.log4j.Logger;
 import org.reflections.Reflections;
 import org.reflections.scanners.MethodAnnotationsScanner;
 import org.reflections.util.ClasspathHelper;
@@ -13,20 +14,6 @@ import org.testng.xml.XmlClass;
 import org.testng.xml.XmlSuite;
 import org.testng.xml.XmlSuite.ParallelMode;
 import org.testng.xml.XmlTest;
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-import org.w3c.dom.NodeList;
-import org.xml.sax.SAXException;
-
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
-import javax.xml.transform.Transformer;
-import javax.xml.transform.TransformerConfigurationException;
-import javax.xml.transform.TransformerException;
-import javax.xml.transform.TransformerFactory;
-import javax.xml.transform.dom.DOMSource;
-import javax.xml.transform.stream.StreamResult;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -78,6 +65,34 @@ public class ATDExecutor {
                     suiteName, categoryName, deviceCount);
         }
 
+        parallelXMLFileEdit();
+
+        result = testNGParallelRunner();
+        figlet("Test Completed");
+        return result;
+    }
+
+    public boolean constructXMLAndTriggerParallelRunner(HashMap<String,List<String>> devicesAndTheirTests, String pack,
+                                                        int deviceCount, String executionType)
+            throws Exception {
+        boolean result;
+        String suiteName = SUITE_NAME.get();
+        String categoryName = CATEGORY.get();
+        Set<Method> setOfMethods = getMethods(pack);
+        String runnerLevel = RUNNER_LEVEL.get();
+
+        if (executionType.equalsIgnoreCase("distribute")) {
+            if (runnerLevel != null && runnerLevel.equalsIgnoreCase("class")) {
+
+                if(devicesAndTheirTests.size() > deviceCount) {
+                    System.out.println("Required devices count is greater than the available devices count");
+                }
+                else {
+                    constructXmlSuiteForMultipleClassDistribution(devicesAndTheirTests, getTestMethods(setOfMethods),
+                            suiteName, categoryName, deviceCount);
+                }
+            }
+        }
         parallelXMLFileEdit();
 
         result = testNGParallelRunner();
@@ -182,6 +197,55 @@ public class ATDExecutor {
     }
 
 
+    public XmlTest xmlTestsCreatorForDeviceSpecificClasses(XmlSuite suite,List<String> testClasses,
+                                                      Map<String, List<Method>> methods , String deviceName){
+
+        XmlTest test = new XmlTest(suite);
+
+        List<XmlClass> xmlClasses = new ArrayList<>();
+        for(String className : methods.keySet()) {
+
+            for(String testClass : testClasses) {
+                if (className.contains("Test") && className.contains(testClass)) {
+                    XmlClass xmlClass = new XmlClass();
+                    xmlClass.setName(className);
+                    xmlClasses.add(xmlClass);
+                    test.setName(deviceName + " Device tests");
+                    test.addParameter("device", deviceName);
+                    test.setThreadCount(1);
+                    test.setXmlClasses(xmlClasses);
+                    test.setParallel(ParallelMode.METHODS);
+//                test.setPreserveOrder(true);
+//                test.addParameter("parallel", "false");
+                    test.setVerbose(2);
+                }
+            }
+        }
+        return test;
+    }
+
+    public XmlSuite constructXmlSuiteForMultipleClassDistribution(HashMap<String,List<String>> devicesAndTheirTests,
+                                                                  Map<String, List<Method>> methods,
+                                                                  String suiteName, String categoryName, int deviceCount) {
+        XmlSuite suite = new XmlSuite();
+        suite.setName(suiteName);
+        suite.setThreadCount(deviceCount);
+        suite.setParallel(ParallelMode.TESTS);
+        suite.setVerbose(2);
+        suite.setPreserveOrder(true);
+        listeners.add("com.appium.manager.AppiumParallelMethodTestListener");
+        include(listeners, LISTENERS);
+        suite.setListeners(listeners);
+        System.out.println("Is Preserve Order Enabled: " + suite.getPreserveOrder());
+
+            for (String deviceName : devicesAndTheirTests.keySet()) {
+                xmlTestsCreatorForDeviceSpecificClasses(suite, devicesAndTheirTests.get(deviceName), methods, deviceName);
+        }
+
+        writeTestNGFile(suite);
+        return suite;
+    }
+
     public XmlSuite constructXmlSuiteForMultipleClassDistribution(List<String> tests,
                                                                                      Map<String, List<Method>> methods,
                                                                                      String suiteName, String categoryName, int deviceCount) {
@@ -273,7 +337,6 @@ public class ATDExecutor {
                 currentDeviceIndex = (currentDeviceIndex + 1) % devicesCount; // Rotate devices
             }
         }
-
 
         return segregatedTestCases;
     }

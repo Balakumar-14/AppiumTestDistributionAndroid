@@ -2,7 +2,6 @@ package com.test.site;
 
 import org.testng.annotations.Test;
 
-@Test(groups = { "DemoOneTest" })
 public class DemoOneTest extends UserBaseTest{
     @Test(priority = 1)
     public void demoOneTestOne() {

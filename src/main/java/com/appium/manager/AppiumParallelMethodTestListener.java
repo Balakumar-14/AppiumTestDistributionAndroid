@@ -61,26 +61,6 @@ public final class AppiumParallelMethodTestListener extends Helpers
      */
     @Override
     public void onTestStart(ITestResult iTestResult) {
-        try {
-            List<Device> devices = Devices.getConnectedDevices();
-            for (Device device : devices) {
-                if (!device.busy) {
-                    // Command 1: adb uninstall io.appium.uiautomator2.server
-                    ProcessBuilder processBuilder1 = new ProcessBuilder("adb", "-s" , device.udid,"uninstall", "io.appium.uiautomator2.server");
-                    Process process1 = processBuilder1.start();
-                    int exitCode1 = process1.waitFor();
-                    LOGGER.info("Command 1 exit code: " + exitCode1);
-
-                    // Command 2: adb uninstall io.appium.uiautomator2.server.test
-                    ProcessBuilder processBuilder2 = new ProcessBuilder("adb", "uninstall", "io.appium.uiautomator2.server.test");
-                    Process process2 = processBuilder2.start();
-                    int exitCode2 = process2.waitFor();
-                    LOGGER.info("Command 2 exit code: " + exitCode2);
-                }
-            }
-        } catch (IOException | InterruptedException e) {
-            e.printStackTrace();
-        }
     }
 
     private boolean isCloudExecution() {
@@ -92,6 +72,44 @@ public final class AppiumParallelMethodTestListener extends Helpers
         testLogger.startDeviceLogAndVideoCapture(iTestResult);
     }
 
+    public void adbRefreshForDevice(String deviceName) {
+        try {
+
+                    // Command 1: adb uninstall io.appium.uiautomator2.server
+                    ProcessBuilder processBuilder1 = new ProcessBuilder("adb", "-s" , deviceName,"uninstall", "io.appium.uiautomator2.server");
+                    Process process1 = processBuilder1.start();
+                    int exitCode1 = process1.waitFor();
+                    LOGGER.info("Command 1 exit code: " + exitCode1);
+
+                    // Command 2: adb uninstall io.appium.uiautomator2.server.test
+                    ProcessBuilder processBuilder2 = new ProcessBuilder("adb", "-s" , deviceName,"uninstall", "io.appium.uiautomator2.server.test");
+                    Process process2 = processBuilder2.start();
+                    int exitCode2 = process2.waitFor();
+                    LOGGER.info("Command 2 exit code: " + exitCode2);
+
+        } catch (IOException | InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void checkDeviceStatus(String deviceName){
+        List<Device> devices = Devices.getConnectedDevices();
+
+        for (Device device : devices) {
+            if(device.getUdid().equalsIgnoreCase(deviceName))
+            {
+                if(!device.busy)
+                {
+                    adbRefreshForDevice(deviceName);
+                    LOGGER.info("Device is available for test execution before invocation");
+                }
+                else {
+                    LOGGER.info("Device is busy for invocation");
+                }
+            }
+        }
+    }
+
     /*
      * Skips execution based on platform
      */
@@ -100,6 +118,8 @@ public final class AppiumParallelMethodTestListener extends Helpers
         String testMethodName = iInvokedMethod.getTestMethod().getMethodName();
         String testName = context.getCurrentXmlTest().getName();
         String deviceName = context.getCurrentXmlTest().getParameter("device");
+
+        checkDeviceStatus(deviceName);
 
         LOGGER.info("TestName : "+ testMethodName + ", DeviceName : " + deviceName);
 
