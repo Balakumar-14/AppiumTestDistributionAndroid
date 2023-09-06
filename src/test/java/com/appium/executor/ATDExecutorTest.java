@@ -21,6 +21,8 @@ import java.util.Set;
 import static org.apache.commons.io.IOUtils.toInputStream;
 import static org.testng.Assert.assertTrue;
 
+
+// Never used this class and methods in our framework
 public class ATDExecutorTest {
     ATDExecutor ATDExecutor;
     DocumentBuilder db;

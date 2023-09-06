@@ -36,6 +36,7 @@ public class ATDRunner {
     public ATDRunner() throws Exception {
         capabilities = Capabilities.getInstance();
         writeServiceConfig();
+        createAppiumLogsFolder();
         AppiumServerManager appiumServerManager = new AppiumServerManager();
         appiumServerManager.startAppiumServer("127.0.0.1");
 
@@ -69,11 +70,29 @@ public class ATDRunner {
         }
     }
 
+    /**
+     * Executes the specified test classes without explicitly mentioning devices for each class.
+     * The test classes will be executed using the available devices.
+     *
+     * @param pack  The package name containing the test classes to be executed.
+     * @param tests A list of test class names to be executed.
+     * @return true if the tests are executed successfully; false otherwise.
+     * @throws Exception If there are errors during test execution.
+     */
     public boolean runner(String pack, List<String> tests) throws Exception {
         figlet(RUNNER.get());
         return parallelExecution(pack, tests);
     }
 
+    /**
+     * Executes the test classes specified in the provided package using the given devices.
+     * Device details are collected from the passed HashMap.
+     *
+     * @param pack  The package name containing the test classes to be executed.
+     * @param tests A HashMap containing device names as keys and lists of associated test names as values.
+     * @return true if the tests are executed successfully; false otherwise.
+     * @throws Exception If there are errors during test execution.
+     */
     public boolean runner(String pack, HashMap<String, List<String>> tests) throws Exception {
         figlet(RUNNER.get());
         return parallelExecution(pack, tests);
@@ -83,6 +102,18 @@ public class ATDRunner {
         return parallelExecution(pack, new ArrayList<>());
     }
 
+    /**
+     * Executes the specified test classes using the available devices.
+     * Devices do not need to be explicitly mentioned for each test class.
+     * This method checks the availability of connected devices, creates an Appium logs folder,
+     * and sets up a snapshot directory. It also handles platform-specific configurations
+     * such as setting the automationName for Android.
+     *
+     * @param pack  The package name containing the test classes to be executed.
+     * @param tests A list of test class names to be executed.
+     * @return true if the tests are executed successfully; false otherwise.
+     * @throws Exception If there are errors during test execution or configuration.
+     */
     private boolean parallelExecution(String pack, List<String> tests) throws Exception {
         int deviceCount = Devices.getConnectedDevices().size();
 
@@ -92,7 +123,7 @@ public class ATDRunner {
         }
 
         LOGGER.info(LOGGER.getName()
-                + "Total Number of devices detected::" + deviceCount + "\n");
+                + " Total Number of devices detected::" + deviceCount + "\n");
 
         createAppiumLogsFolder();
         createSnapshotDirectoryFor();
@@ -118,6 +149,17 @@ public class ATDRunner {
         return result;
     }
 
+    /**
+     * Executes the specified test classes with respect to the mentioned devices.
+     * This method checks the availability of the specified devices among the connected devices,
+     * creates an Appium logs folder, and sets up a snapshot directory. It also handles platform-specific configurations
+     * such as setting the automationName for Android.
+     *
+     * @param pack                  The package name containing the test classes to be executed.
+     * @param devicesAndTheirTests  A HashMap containing device names as keys and lists of associated test names as values.
+     * @return true if the tests are executed successfully; false otherwise.
+     * @throws Exception If there are errors during test execution, device availability checks, or configuration.
+     */
     private boolean parallelExecution(String pack, HashMap<String,List<String>> devicesAndTheirTests) throws Exception {
 
         int deviceCount = availableDevices.size();
@@ -128,7 +170,7 @@ public class ATDRunner {
         }
 
         LOGGER.info(LOGGER.getName()
-                + "Total Number of devices detected::" + deviceCount + "\n");
+                + " Total Number of devices detected::" + deviceCount + "\n");
 
         // Create a set to store the names of available devices
         Set<String> availableDeviceNames = new HashSet<>();
@@ -141,7 +183,7 @@ public class ATDRunner {
             if (availableDeviceNames.contains(deviceName)) {
                 System.out.println(deviceName + " is present in availableDevices list.");
             } else {
-                System.out.println(deviceName + " is not present in availableDevices list.");
+                throw new RuntimeException(deviceName + " is not present in availableDevices list.");
             }
         }
 

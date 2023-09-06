@@ -2,7 +2,6 @@ package com.appium.executor;
 
 import com.appium.device.Device;
 import com.appium.utils.ConfigFileManager;
-import org.apache.log4j.Logger;
 import org.reflections.Reflections;
 import org.reflections.scanners.MethodAnnotationsScanner;
 import org.reflections.util.ClasspathHelper;
@@ -14,6 +13,7 @@ import org.testng.xml.XmlClass;
 import org.testng.xml.XmlSuite;
 import org.testng.xml.XmlSuite.ParallelMode;
 import org.testng.xml.XmlTest;
+
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -43,6 +43,19 @@ public class ATDExecutor {
         this.deviceList = deviceList;
     }
 
+    /**
+     * Constructs an XML suite for parallel test execution and triggers the TestNG parallel runner.
+     * XML File constructor to execute test classes with available devices
+     * Depending on the specified execution type ("distribute" or "parallel") and runner level ("class" or "method"),
+     * this method generates the appropriate TestNG XML suite configuration and initiates test execution.
+     *
+     * @param test         A list of test names to be executed.
+     * @param pack         The package name containing the test methods.
+     * @param deviceCount  The number of devices or parallel threads for test execution.
+     * @param executionType  The execution type, which can be "distribute" or "parallel".
+     * @return true if the tests are executed successfully; false otherwise.
+     * @throws Exception If there are errors during TestNG suite construction or test execution.
+     */
     public boolean constructXMLAndTriggerParallelRunner(List<String> test, String pack,
                                                         int deviceCount, String executionType)
             throws Exception {
@@ -72,6 +85,22 @@ public class ATDExecutor {
         return result;
     }
 
+    /**
+     * Constructs an XML suite for parallel test execution based on a provided HashMap of devices and their associated tests,
+     * and triggers the TestNG parallel runner. The method determines whether to distribute tests by class or method level,
+     * based on the specified execution type ("distribute" or "parallel") and runner level ("class" or "method").
+     * XML file constructor for executing test classes with respect to mentioned device for the classes
+     * If tests are distributed by class and the required device count exceeds the available devices count,
+     * it displays a message indicating that the required devices count is greater than the available devices count.
+     *
+     * @param devicesAndTheirTests A HashMap containing device names as keys and lists of associated test names as values.
+     * @param pack                 The package name containing the test methods.
+     * @param deviceCount          The number of devices or parallel threads for test execution.
+     * @param executionType        The execution type, which can be "distribute" or "parallel".
+     * @return true if the tests are executed successfully; false otherwise.
+     * @throws Exception If there are errors during TestNG suite construction or test execution.
+     */
+
     public boolean constructXMLAndTriggerParallelRunner(HashMap<String,List<String>> devicesAndTheirTests, String pack,
                                                         int deviceCount, String executionType)
             throws Exception {
@@ -100,6 +129,11 @@ public class ATDExecutor {
         return result;
     }
 
+    /**
+     * Edits the TestNG XML configuration file to disable method-level parallelism and remove thread count settings.
+     * Specifically, it modifies the XML file to replace "parallel="methods"" with "parallel="false"" and removes
+     * any "thread-count" attributes, if value is '1'.
+     */
     public void parallelXMLFileEdit(){
         try {
             // Define the path to the XML file
@@ -196,34 +230,19 @@ public class ATDExecutor {
         return suite;
     }
 
-
-    public XmlTest xmlTestsCreatorForDeviceSpecificClasses(XmlSuite suite,List<String> testClasses,
-                                                      Map<String, List<Method>> methods , String deviceName){
-
-        XmlTest test = new XmlTest(suite);
-
-        List<XmlClass> xmlClasses = new ArrayList<>();
-        for(String className : methods.keySet()) {
-
-            for(String testClass : testClasses) {
-                if (className.contains("Test") && className.contains(testClass)) {
-                    XmlClass xmlClass = new XmlClass();
-                    xmlClass.setName(className);
-                    xmlClasses.add(xmlClass);
-                    test.setName(deviceName + " Device tests");
-                    test.addParameter("device", deviceName);
-                    test.setThreadCount(1);
-                    test.setXmlClasses(xmlClasses);
-                    test.setParallel(ParallelMode.METHODS);
-//                test.setPreserveOrder(true);
-//                test.addParameter("parallel", "false");
-                    test.setVerbose(2);
-                }
-            }
-        }
-        return test;
-    }
-
+    /**
+     * Constructs an XML TestNG suite configuration to execute test classes with respect to hashmap specified devices.
+     * This method creates separate XML test configurations for each device, associating the specified test classes
+     * with their respective devices. It sets up TestNG suite properties such as thread count, parallel execution mode,
+     * and listeners.
+     *
+     * @param devicesAndTheirTests A HashMap containing device names as keys and lists of associated test class names as values.
+     * @param methods              A mapping of test class names to their corresponding test methods.
+     * @param suiteName            The name of the TestNG suite.
+     * @param categoryName         The name of the TestNG category.
+     * @param deviceCount          The number of devices or parallel threads for test execution.
+     * @return An XmlSuite object representing the constructed TestNG suite configuration.
+     */
     public XmlSuite constructXmlSuiteForMultipleClassDistribution(HashMap<String,List<String>> devicesAndTheirTests,
                                                                   Map<String, List<Method>> methods,
                                                                   String suiteName, String categoryName, int deviceCount) {
@@ -238,14 +257,61 @@ public class ATDExecutor {
         suite.setListeners(listeners);
         System.out.println("Is Preserve Order Enabled: " + suite.getPreserveOrder());
 
-            for (String deviceName : devicesAndTheirTests.keySet()) {
-                xmlTestsCreatorForDeviceSpecificClasses(suite, devicesAndTheirTests.get(deviceName), methods, deviceName);
+        for (String deviceName : devicesAndTheirTests.keySet()) {
+            xmlTestsCreatorForDeviceSpecificMultipleClasses(suite, devicesAndTheirTests.get(deviceName), methods, deviceName);
         }
 
         writeTestNGFile(suite);
         return suite;
     }
 
+    /**
+     * Creates an XML Test configuration for executing multiple test classes on a specific device.
+     * This method takes a list of test class names and associates them with a device-specific XML test configuration.
+     * It sets up properties for the XML test, including thread count, parallel execution mode, and parameters.
+     *
+     * @param suite        The parent XmlSuite to which the created XmlTest will be added.
+     * @param testClasses  A list of test class names to be associated with the XML test.
+     * @param methods      A mapping of test class names to their corresponding test methods.
+     * @param deviceName   The name of the device for which the tests are configured.
+     * @return An XmlTest object representing the device-specific test configuration.
+     */
+    public XmlTest xmlTestsCreatorForDeviceSpecificMultipleClasses(XmlSuite suite, List<String> testClasses,
+                                                                   Map<String, List<Method>> methods , String deviceName){
+
+        XmlTest test = new XmlTest(suite);
+
+        List<XmlClass> xmlClasses = new ArrayList<>();
+        for(String className : methods.keySet()) {
+            for(String testClass : testClasses) {
+                if (className.contains("Test") && className.contains(testClass)) {
+                    XmlClass xmlClass = new XmlClass();
+                    xmlClass.setName(className);
+                    xmlClasses.add(xmlClass);
+                    test.setName(deviceName + " Device tests");
+                    test.addParameter("device", deviceName);
+                    test.setThreadCount(1);
+                    test.setXmlClasses(xmlClasses);
+                    test.setParallel(ParallelMode.METHODS);
+                    test.setVerbose(2);
+                }
+            }
+        }
+        return test;
+    }
+
+    /**
+     * Constructs an XML TestNG suite configuration to execute test classes with available devices.
+     * This method distributes the specified test classes across multiple devices based on the provided device count.
+     * It sets up TestNG suite properties such as thread count, parallel execution mode, and listeners.
+     *
+     * @param tests         A list of test class names to be executed.
+     * @param methods       A mapping of test class names to their corresponding test methods.
+     * @param suiteName     The name of the TestNG suite.
+     * @param categoryName  The name of the TestNG category.
+     * @param deviceCount   The number of devices or parallel threads for test execution.
+     * @return An XmlSuite object representing the constructed TestNG suite configuration.
+     */
     public XmlSuite constructXmlSuiteForMultipleClassDistribution(List<String> tests,
                                                                                      Map<String, List<Method>> methods,
                                                                                      String suiteName, String categoryName, int deviceCount) {
@@ -263,8 +329,6 @@ public class ATDExecutor {
 
         int deviceIterator = 0;
 
-        int iterator = 0;
-
         List<List<String>> segregatedTestCases = distributeTestCases(tests, devicesCount);
 
         // Display the segregated test cases for each device
@@ -276,7 +340,7 @@ public class ATDExecutor {
             for(List<String> testClasses : segregatedTestCases)
             {
                 if(!deviceList.get(deviceIterator).busy){
-                    xmlTestsCreatorWithMultipleClasses(suite, testClasses, methods, deviceList.get(deviceIterator).udid);
+                    xmlTestsCreatorForDeviceSpecificMultipleClasses(suite, testClasses, methods, deviceList.get(deviceIterator).udid);
                     if(deviceIterator == (devicesCount-1))
                     {
                         deviceIterator = 0;
@@ -288,7 +352,6 @@ public class ATDExecutor {
             }
         }
 
-//        XmlClass xmlClass = writeSingleXMLClass(tests.get(1), methods);
         writeTestNGFile(suite);
         return suite;
     }
@@ -311,8 +374,6 @@ public class ATDExecutor {
                     test.setThreadCount(1);
                     test.setXmlClasses(xmlClasses);
                     test.setParallel(ParallelMode.METHODS);
-//                test.setPreserveOrder(true);
-//                test.addParameter("parallel", "false");
                     test.setVerbose(2);
                 }
             }
@@ -320,6 +381,15 @@ public class ATDExecutor {
         return test;
     }
 
+    /**
+     * Distributes a list of test cases evenly among a specified number of devices.
+     * This method creates separate lists for each device and assigns test cases to these lists
+     * in a round-robin fashion to ensure an even distribution.
+     *
+     * @param tests        A list of test cases to be distributed among devices.
+     * @param devicesCount The number of devices or lists to distribute the test cases to.
+     * @return A list of lists, where each inner list contains the test cases assigned to a specific device.
+     */
     private static List<List<String>> distributeTestCases(List<String> tests, int devicesCount) {
         List<List<String>> segregatedTestCases = new ArrayList<>();
 
@@ -339,6 +409,40 @@ public class ATDExecutor {
         }
 
         return segregatedTestCases;
+    }
+
+    /**
+     * Creates an XML Test configuration for executing a specific single test case on a device.
+     * This method associates a single test case with an XML test configuration, sets up properties for the XML test,
+     * including thread count, parallel execution mode, and parameters.
+     *
+     * @param suite       The parent XmlSuite to which the created XmlTest will be added.
+     * @param testCase    The name of the test case to be associated with the XML test.
+     * @param methods     A mapping of test class names to their corresponding test methods.
+     * @param deviceName  The name of the device for which the test is configured.
+     * @return An XmlTest object representing the test configuration for the specified test case and device.
+     */
+    public XmlTest xmlTestsCreator(XmlSuite suite,String testCase,
+                                   Map<String, List<Method>> methods , String deviceName){
+
+        XmlTest test = new XmlTest(suite);
+        for(String className : methods.keySet()) {
+            List<XmlClass> xmlClasses = new ArrayList<>();
+            if (className.contains("Test") && className.contains(testCase)) {
+                XmlClass xmlClass = new XmlClass();
+                xmlClass.setName(className);
+                xmlClasses.add(xmlClass);
+                test.setName(className);
+                test.addParameter("device", deviceName);
+                test.setThreadCount(1);
+                test.setXmlClasses(xmlClasses);
+                test.setParallel(ParallelMode.METHODS);
+//                test.setPreserveOrder(true);
+//                test.addParameter("parallel", "false");
+                test.setVerbose(2);
+            }
+        }
+        return test;
     }
 
     public XmlSuite constructXmlSuiteForClassLevelForSingleDevicesDistributionRunner(List<String> tests,
@@ -374,32 +478,8 @@ public class ATDExecutor {
             }
         }
 
-//        XmlClass xmlClass = writeSingleXMLClass(tests.get(1), methods);
         writeTestNGFile(suite);
         return suite;
-    }
-
-    public XmlTest xmlTestsCreator(XmlSuite suite,String testCase,
-                                   Map<String, List<Method>> methods , String deviceName){
-
-        XmlTest test = new XmlTest(suite);
-        for(String className : methods.keySet()) {
-            List<XmlClass> xmlClasses = new ArrayList<>();
-            if (className.contains("Test") && className.contains(testCase)) {
-                XmlClass xmlClass = new XmlClass();
-                xmlClass.setName(className);
-                xmlClasses.add(xmlClass);
-                test.setName(className);
-                test.addParameter("device", deviceName);
-                test.setThreadCount(1);
-                test.setXmlClasses(xmlClasses);
-                test.setParallel(ParallelMode.METHODS);
-//                test.setPreserveOrder(true);
-//                test.addParameter("parallel", "false");
-                test.setVerbose(2);
-            }
-        }
-        return test;
     }
 
     public XmlSuite constructXmlSuiteForMethodLevelDistributionRunner(List<String> tests,
@@ -427,6 +507,12 @@ public class ATDExecutor {
         return suite;
     }
 
+    /**
+     * Executes TestNG parallel test suites based on the specified TestNG XML configuration file.
+     * This method runs TestNG tests by loading the specified XML suite and checks for test failures.
+     *
+     * @return true if there are test failures; false otherwise.
+     */
     public boolean testNGParallelRunner() {
         TestNG testNG = new TestNG();
         List<String> suites = Lists.newArrayList();

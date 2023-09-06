@@ -2,50 +2,48 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
-    <groupId>com.github.saikrishna321</groupId>
+    <groupId>com.zoho.iam-art-mobile</groupId>
     <artifactId>AppiumTestDistribution</artifactId>
-    <version>13.1.2</version>
+    <version>1.0.0-beta1</version>
     <packaging>jar</packaging>
     <name>AppiumTestDistribution</name>
-    <description>A tool run Android and iOS test in parallel across devices</description>
-    <url>https://github.com/saikrishna321/AppiumTestDistribution</url>
+    <description>A tool run Android in parallel across devices</description>
+<!--    <licenses>-->
+<!--        <license>-->
+<!--            <name>GNU Public License version 3.0</name>-->
+<!--            <url>http://www.gnu.org/licenses/gpl-3.0.txt</url>-->
+<!--        </license>-->
+<!--    </licenses>-->
 
-    <licenses>
-        <license>
-            <name>GNU Public License version 3.0</name>
-            <url>http://www.gnu.org/licenses/gpl-3.0.txt</url>
-        </license>
-    </licenses>
+<!--    <scm>-->
+<!--        <url>https://github.com/saikrishna321/AppiumTestDistribution.git</url>-->
+<!--        <connection>scm:git:git@github.com:saikrishna321/AppiumTestDistribution.git</connection>-->
+<!--    </scm>-->
 
-    <scm>
-        <url>https://github.com/saikrishna321/AppiumTestDistribution.git</url>
-        <connection>scm:git:git@github.com:saikrishna321/AppiumTestDistribution.git</connection>
-    </scm>
+<!--    <developers>-->
+<!--        <developer>-->
+<!--            <name>Sai Krishna</name>-->
+<!--            <email>saikrishna321@yahoo.com</email>-->
+<!--            <roles>-->
+<!--                <role>owner</role>-->
+<!--            </roles>-->
+<!--        </developer>-->
+<!--        <developer>-->
+<!--            <name>Srinivasan Sekar</name>-->
+<!--            <email>srinivasan.sekar1990@gmail.com</email>-->
+<!--        </developer>-->
+<!--    </developers>-->
 
-    <developers>
-        <developer>
-            <name>Sai Krishna</name>
-            <email>saikrishna321@yahoo.com</email>
-            <roles>
-                <role>owner</role>
-            </roles>
-        </developer>
-        <developer>
-            <name>Srinivasan Sekar</name>
-            <email>srinivasan.sekar1990@gmail.com</email>
-        </developer>
-    </developers>
-
-    <distributionManagement>
-        <snapshotRepository>
-            <id>ossrh</id>
-            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
-        </snapshotRepository>
-        <repository>
-            <id>ossrh</id>
-            <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
-        </repository>
-    </distributionManagement>
+<!--    <distributionManagement>-->
+<!--        <snapshotRepository>-->
+<!--            <id>ossrh</id>-->
+<!--            <url>https://oss.sonatype.org/content/repositories/snapshots</url>-->
+<!--        </snapshotRepository>-->
+<!--        <repository>-->
+<!--            <id>ossrh</id>-->
+<!--            <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>-->
+<!--        </repository>-->
+<!--    </distributionManagement>-->
 
     <repositories>
         <repository>
@@ -208,6 +206,9 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-gpg-plugin</artifactId>
                 <version>1.6</version>
+                <configuration>
+                    <skip>true</skip>
+                </configuration>
                 <executions>
                     <execution>
                         <id>sign-artifacts</id>

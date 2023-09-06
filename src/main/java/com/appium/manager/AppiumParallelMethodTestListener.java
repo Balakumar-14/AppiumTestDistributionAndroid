@@ -164,7 +164,7 @@ public final class AppiumParallelMethodTestListener extends Helpers
 
 
 
-    /*
+    /**
      * Stops driver after each test method execution
      * De-allocates device after each test method execution
      * Terminate logs getting captured after each test method execution
@@ -219,7 +219,7 @@ public final class AppiumParallelMethodTestListener extends Helpers
         }
     }
 
-    /*
+    /**
      * Stops Appium Server after each test suite
      */
     @Override
@@ -231,7 +231,7 @@ public final class AppiumParallelMethodTestListener extends Helpers
         }
     }
 
-    /*
+    /**
      * Document to make codacy happy
      */
     @Override
@@ -239,7 +239,7 @@ public final class AppiumParallelMethodTestListener extends Helpers
         LOGGER.info("Reached onTestSuccess listener");
     }
 
-    /*
+    /**
      * Document to make codacy happy
      */
     @Override
@@ -247,7 +247,7 @@ public final class AppiumParallelMethodTestListener extends Helpers
 
     }
 
-    /*
+    /**
      * Document to make codacy happy
      */
     @Override

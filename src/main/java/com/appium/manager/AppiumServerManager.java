@@ -62,6 +62,7 @@ public class AppiumServerManager {
     // This method starts the Appium server on the specified host.
     // It configures AppiumServiceBuilder with logfile location, IP address, timeout.
     public void startAppiumServer(String host) throws Exception {
+
         LOGGER.info(LOGGER.getName() + " Starting Appium Server on Localhost");
         AppiumDriverLocalService appiumDriverLocalService;
         AppiumServiceBuilder builder =
