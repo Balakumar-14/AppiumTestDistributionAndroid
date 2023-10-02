@@ -159,7 +159,7 @@
         <dependency>
             <groupId>com.epam.reportportal</groupId>
             <artifactId>commons-model</artifactId>
-            <version>5.8.0</version>
+            <version>5.10.0</version>
         </dependency>
         <dependency>
             <groupId>com.google.code.gson</groupId>
